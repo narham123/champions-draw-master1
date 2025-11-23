@@ -58,6 +58,13 @@ const Standings = ({ standings }: StandingsProps) => {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
+                    {entry.team.logo && (
+                      <img 
+                        src={entry.team.logo} 
+                        alt={`${entry.team.name} logo`} 
+                        className="h-8 w-8 object-contain"
+                      />
+                    )}
                     <div>
                       <div className="font-outfit font-semibold text-foreground">
                         {entry.team.name}

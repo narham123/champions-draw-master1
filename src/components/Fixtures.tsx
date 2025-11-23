@@ -1,13 +1,24 @@
+import { useState } from "react";
 import { Match } from "@/types/team";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, MessageSquare } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import MatchCommentary from "./MatchCommentary";
 
 interface FixturesProps {
   fixtures: Match[];
 }
 
 const Fixtures = ({ fixtures }: FixturesProps) => {
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  
   const fixturesByMatchday = fixtures.reduce((acc, fixture) => {
     if (!acc[fixture.matchday]) {
       acc[fixture.matchday] = [];
@@ -37,15 +48,24 @@ const Fixtures = ({ fixtures }: FixturesProps) => {
               {matches.map((match) => (
                 <Card 
                   key={match.id}
-                  className="p-4 bg-card border-border hover:border-accent/30 transition-all"
+                  className="p-4 bg-card border-border hover:border-accent/30 transition-all group"
                 >
-                  <div className="grid grid-cols-3 gap-4 items-center">
-                    <div className="text-right space-y-1">
-                      <div className="font-outfit font-semibold text-foreground">
-                        {match.homeTeam.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {match.homeTeam.country}
+                  <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-4 items-center">
+                    <div className="flex items-center justify-end gap-3">
+                      {match.homeTeam.logo && (
+                        <img 
+                          src={match.homeTeam.logo} 
+                          alt={`${match.homeTeam.name} logo`} 
+                          className="h-8 w-8 object-contain"
+                        />
+                      )}
+                      <div className="text-right space-y-1">
+                        <div className="font-outfit font-semibold text-foreground">
+                          {match.homeTeam.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {match.homeTeam.country}
+                        </div>
                       </div>
                     </div>
                     
@@ -65,20 +85,51 @@ const Fixtures = ({ fixtures }: FixturesProps) => {
                       )}
                     </div>
                     
-                    <div className="text-left space-y-1">
-                      <div className="font-outfit font-semibold text-foreground">
-                        {match.awayTeam.name}
+                    <div className="flex items-center gap-3">
+                      <div className="text-left space-y-1">
+                        <div className="font-outfit font-semibold text-foreground">
+                          {match.awayTeam.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {match.awayTeam.country}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {match.awayTeam.country}
-                      </div>
+                      {match.awayTeam.logo && (
+                        <img 
+                          src={match.awayTeam.logo} 
+                          alt={`${match.awayTeam.name} logo`} 
+                          className="h-8 w-8 object-contain"
+                        />
+                      )}
                     </div>
+                    
+                    {match.played && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedMatch(match)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MessageSquare className="h-4 w-4 text-accent" />
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}
             </div>
           </div>
         ))}
+
+      <Dialog open={!!selectedMatch} onOpenChange={() => setSelectedMatch(null)}>
+        <DialogContent className="bg-card border-border max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-outfit text-gradient-gold">
+              {selectedMatch && `${selectedMatch.homeTeam.name} vs ${selectedMatch.awayTeam.name}`}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedMatch && <MatchCommentary match={selectedMatch} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

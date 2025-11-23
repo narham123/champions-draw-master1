@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, Sparkles, Loader2 } from "lucide-react";
+import { Play, Sparkles, Loader2, RotateCw } from "lucide-react";
 import { Team, Match } from "@/types/team";
 import { conductSwissDraw } from "@/lib/drawEngine";
 import { toast } from "sonner";
@@ -10,9 +10,10 @@ import { toast } from "sonner";
 interface DrawCeremonyProps {
   teams: Team[];
   onDrawComplete: (fixtures: Match[]) => void;
+  hasExistingDraw: boolean;
 }
 
-const DrawCeremony = ({ teams, onDrawComplete }: DrawCeremonyProps) => {
+const DrawCeremony = ({ teams, onDrawComplete, hasExistingDraw }: DrawCeremonyProps) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [drawProgress, setDrawProgress] = useState(0);
@@ -68,15 +69,26 @@ const DrawCeremony = ({ teams, onDrawComplete }: DrawCeremonyProps) => {
       </div>
 
       {!isDrawing && !currentMatch && (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4">
           <Button
             size="lg"
             onClick={startDraw}
             className="bg-accent hover:bg-accent/90 text-accent-foreground font-outfit font-bold text-lg px-8 py-6 glow-gold"
           >
             <Play className="mr-2 h-5 w-5" />
-            Conduct Draw
+            {hasExistingDraw ? 'Re-run Draw' : 'Conduct Draw'}
           </Button>
+          {hasExistingDraw && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={startDraw}
+              className="border-accent/30 hover:bg-accent/10 font-outfit font-semibold text-lg px-8 py-6"
+            >
+              <RotateCw className="mr-2 h-5 w-5" />
+              New Draw
+            </Button>
+          )}
         </div>
       )}
 
