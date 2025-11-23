@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Team, Match } from "@/types/team";
 import { defaultTeams } from "@/lib/defaultTeams";
@@ -8,10 +8,11 @@ import DrawCeremony from "@/components/DrawCeremony";
 import Fixtures from "@/components/Fixtures";
 import Standings from "@/components/Standings";
 import MatchSimulator from "@/components/MatchSimulator";
+import ExportData from "@/components/ExportData";
 import { Trophy } from "lucide-react";
 
 const Index = () => {
-  const [teams] = useState<Team[]>(defaultTeams);
+  const [teams, setTeams] = useState<Team[]>(defaultTeams);
   const [fixtures, setFixtures] = useState<Match[]>([]);
   const [activeTab, setActiveTab] = useState("teams");
 
@@ -24,6 +25,21 @@ const Index = () => {
 
   const handleSimulation = (updatedFixtures: Match[]) => {
     setFixtures(updatedFixtures);
+  };
+
+  const handleAddTeam = (team: Team) => {
+    setTeams([...teams, team]);
+  };
+
+  const handleDeleteTeam = (teamId: string) => {
+    setTeams(teams.filter(t => t.id !== teamId));
+    // Remove team from fixtures if they exist
+    if (fixtures.length > 0) {
+      const updatedFixtures = fixtures.filter(
+        f => f.homeTeam.id !== teamId && f.awayTeam.id !== teamId
+      );
+      setFixtures(updatedFixtures);
+    }
   };
 
   return (
@@ -46,7 +62,7 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-8 bg-card border border-border p-1 h-auto">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-8 bg-card border border-border p-1 h-auto">
             <TabsTrigger 
               value="teams" 
               className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-outfit font-semibold py-3"
@@ -80,14 +96,29 @@ const Index = () => {
             >
               Simulate
             </TabsTrigger>
+            <TabsTrigger 
+              value="export"
+              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-outfit font-semibold py-3"
+              disabled={fixtures.length === 0}
+            >
+              Export
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="teams" className="mt-0">
-            <TeamManagement teams={teams} />
+            <TeamManagement 
+              teams={teams} 
+              onAddTeam={handleAddTeam}
+              onDeleteTeam={handleDeleteTeam}
+            />
           </TabsContent>
 
           <TabsContent value="draw" className="mt-0">
-            <DrawCeremony teams={teams} onDrawComplete={handleDrawComplete} />
+            <DrawCeremony 
+              teams={teams} 
+              onDrawComplete={handleDrawComplete}
+              hasExistingDraw={fixtures.length > 0}
+            />
           </TabsContent>
 
           <TabsContent value="fixtures" className="mt-0">
@@ -100,6 +131,10 @@ const Index = () => {
 
           <TabsContent value="simulate" className="mt-0">
             <MatchSimulator fixtures={fixtures} onSimulate={handleSimulation} />
+          </TabsContent>
+
+          <TabsContent value="export" className="mt-0">
+            <ExportData fixtures={fixtures} standings={standings} />
           </TabsContent>
         </Tabs>
       </main>
