@@ -1,4 +1,5 @@
 import { StandingsEntry, Match, Team } from "@/types/team";
+import { TournamentRules, defaultTournamentRules } from "@/types/tournamentRules";
 
 export interface PlayoffMatch {
   id: string;
@@ -11,9 +12,14 @@ export interface PlayoffMatch {
   nextMatchId?: string;
 }
 
-export const generatePlayoffBracket = (standings: StandingsEntry[]): PlayoffMatch[] => {
-  // Teams finishing 9-24 enter the playoff bracket
-  const playoffTeams = standings.slice(8, 24);
+export const generatePlayoffBracket = (
+  standings: StandingsEntry[], 
+  rules: TournamentRules = defaultTournamentRules
+): PlayoffMatch[] => {
+  // Teams in playoff positions enter the bracket
+  const startIndex = rules.playoffPositionsStart - 1;
+  const endIndex = rules.playoffPositionsEnd;
+  const playoffTeams = standings.slice(startIndex, endIndex);
   
   if (playoffTeams.length < 16) {
     return [];
@@ -65,7 +71,10 @@ export const generatePlayoffBracket = (standings: StandingsEntry[]): PlayoffMatc
   return [...roundOf16Matches, ...quarterFinalMatches, ...semiFinalMatches, finalMatch];
 };
 
-export const simulatePlayoffMatch = (match: PlayoffMatch): PlayoffMatch => {
+export const simulatePlayoffMatch = (
+  match: PlayoffMatch, 
+  useExtraTime: boolean = true
+): PlayoffMatch => {
   if (!match.homeTeam || !match.awayTeam) return match;
 
   // Simulate based on coefficients with some randomness
@@ -84,11 +93,13 @@ export const simulatePlayoffMatch = (match: PlayoffMatch): PlayoffMatch => {
   let finalAwayGoals = awayGoals;
   
   if (homeGoals === awayGoals) {
-    // Add extra time goal
-    if (Math.random() < homeWinProbability) {
-      finalHomeGoals++;
-    } else {
-      finalAwayGoals++;
+    // Add extra time goal (or penalty winner if disabled)
+    if (useExtraTime || Math.random() < 0.5) {
+      if (Math.random() < homeWinProbability) {
+        finalHomeGoals++;
+      } else {
+        finalAwayGoals++;
+      }
     }
   }
 

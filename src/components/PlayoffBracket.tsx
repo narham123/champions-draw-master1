@@ -5,23 +5,26 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Play, RotateCw } from "lucide-react";
 import { StandingsEntry } from "@/types/team";
+import { TournamentRules } from "@/types/tournamentRules";
 import { generatePlayoffBracket, simulatePlayoffMatch, advanceWinner, PlayoffMatch } from "@/lib/playoffBracket";
 import { toast } from "sonner";
 
 interface PlayoffBracketProps {
   standings: StandingsEntry[];
+  rules: TournamentRules;
 }
 
-const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
+const PlayoffBracket = ({ standings, rules }: PlayoffBracketProps) => {
   const [matches, setMatches] = useState<PlayoffMatch[]>([]);
   const [selectedRound, setSelectedRound] = useState<string>("round-of-16");
 
   useEffect(() => {
-    if (standings.length >= 24) {
-      const bracket = generatePlayoffBracket(standings);
+    const requiredTeams = rules.playoffPositionsEnd - rules.playoffPositionsStart + 1;
+    if (standings.length >= rules.playoffPositionsEnd) {
+      const bracket = generatePlayoffBracket(standings, rules);
       setMatches(bracket);
     }
-  }, [standings]);
+  }, [standings, rules]);
 
   const simulateMatch = (matchId: string) => {
     const match = matches.find(m => m.id === matchId);
@@ -30,7 +33,7 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
       return;
     }
 
-    const simulatedMatch = simulatePlayoffMatch(match);
+    const simulatedMatch = simulatePlayoffMatch(match, rules.extraTimeInKnockout);
     let updatedMatches = matches.map(m => m.id === matchId ? simulatedMatch : m);
     updatedMatches = advanceWinner(updatedMatches, matchId);
     
@@ -45,7 +48,7 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
     const roundMatches = updatedMatches.filter(m => m.round === round && !m.played && m.homeTeam && m.awayTeam);
     
     roundMatches.forEach(match => {
-      const simulatedMatch = simulatePlayoffMatch(match);
+      const simulatedMatch = simulatePlayoffMatch(match, rules.extraTimeInKnockout);
       updatedMatches = updatedMatches.map(m => m.id === match.id ? simulatedMatch : m);
       updatedMatches = advanceWinner(updatedMatches, match.id);
     });
@@ -55,7 +58,7 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
   };
 
   const resetBracket = () => {
-    const bracket = generatePlayoffBracket(standings);
+    const bracket = generatePlayoffBracket(standings, rules);
     setMatches(bracket);
     toast.success("Bracket reset!");
   };
@@ -120,13 +123,13 @@ const PlayoffBracket = ({ standings }: PlayoffBracketProps) => {
     </Card>
   );
 
-  if (standings.length < 24) {
+  if (standings.length < rules.playoffPositionsEnd) {
     return (
       <div className="text-center p-12 space-y-4">
         <Trophy className="w-16 h-16 mx-auto text-muted-foreground" />
         <h3 className="text-2xl font-outfit font-bold">Playoff Bracket Not Available</h3>
         <p className="text-muted-foreground">
-          Complete the group stage to generate the playoff bracket for teams finishing 9-24.
+          Complete the group stage to generate the playoff bracket for teams finishing {rules.playoffPositionsStart}-{rules.playoffPositionsEnd}.
         </p>
       </div>
     );
