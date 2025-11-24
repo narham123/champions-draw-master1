@@ -1,22 +1,24 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Match } from "@/types/team";
+import { TournamentRules } from "@/types/tournamentRules";
 import { simulateMatch } from "@/lib/drawEngine";
 import { toast } from "sonner";
 import { Play, RotateCw } from "lucide-react";
 
 interface MatchSimulatorProps {
   fixtures: Match[];
+  rules: TournamentRules;
   onSimulate: (updatedFixtures: Match[]) => void;
 }
 
-const MatchSimulator = ({ fixtures, onSimulate }: MatchSimulatorProps) => {
+const MatchSimulator = ({ fixtures, rules, onSimulate }: MatchSimulatorProps) => {
   const [isSimulating, setIsSimulating] = useState(false);
 
   const simulateAllMatches = async () => {
     setIsSimulating(true);
     
-    const updatedFixtures = fixtures.map(match => simulateMatch(match));
+    const updatedFixtures = fixtures.map(match => simulateMatch(match, rules.allowDraws));
     
     // Simulate delay for effect
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -34,7 +36,7 @@ const MatchSimulator = ({ fixtures, onSimulate }: MatchSimulatorProps) => {
     
     const updatedFixtures = fixtures.map(match => {
       if (match.matchday === matchday && !match.played) {
-        return simulateMatch(match);
+        return simulateMatch(match, rules.allowDraws);
       }
       return match;
     });

@@ -6,17 +6,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Play, RotateCw, Volume2, VolumeX } from "lucide-react";
 import { Team, Match } from "@/types/team";
+import { TournamentRules } from "@/types/tournamentRules";
 import { conductSwissDraw } from "@/lib/drawEngine";
 import { toast } from "sonner";
 import DrawBall3D from "./DrawBall3D";
 
 interface DrawCeremony3DProps {
   teams: Team[];
+  rules: TournamentRules;
   onDrawComplete: (fixtures: Match[]) => void;
   hasExistingDraw: boolean;
 }
 
-const DrawCeremony3D = ({ teams, onDrawComplete, hasExistingDraw }: DrawCeremony3DProps) => {
+const DrawCeremony3D = ({ teams, rules, onDrawComplete, hasExistingDraw }: DrawCeremony3DProps) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [drawProgress, setDrawProgress] = useState(0);
@@ -59,7 +61,7 @@ const DrawCeremony3D = ({ teams, onDrawComplete, hasExistingDraw }: DrawCeremony
       audioRef.current.play().catch(() => {});
     }
 
-    const result = conductSwissDraw(teams);
+    const result = conductSwissDraw(teams, rules);
     
     if (result.errors.length > 0) {
       toast.error("Draw encountered issues", {

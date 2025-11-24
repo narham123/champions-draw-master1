@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Team, Match } from "@/types/team";
+import { TournamentRules, defaultTournamentRules } from "@/types/tournamentRules";
 import { defaultTeams } from "@/lib/defaultTeams";
 import { calculateStandings } from "@/lib/standings";
 import TeamManagement from "@/components/TeamManagement";
+import TournamentRulesEditor from "@/components/TournamentRulesEditor";
 import DrawCeremony3D from "@/components/DrawCeremony3D";
 import Fixtures from "@/components/Fixtures";
 import Standings from "@/components/Standings";
@@ -15,6 +17,7 @@ import { Trophy } from "lucide-react";
 const Index = () => {
   const [teams, setTeams] = useState<Team[]>(defaultTeams);
   const [fixtures, setFixtures] = useState<Match[]>([]);
+  const [rules, setRules] = useState<TournamentRules>(defaultTournamentRules);
   const [activeTab, setActiveTab] = useState("teams");
 
   const standings = calculateStandings(teams, fixtures);
@@ -63,12 +66,18 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 mb-8 bg-card border border-border p-1 h-auto">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 mb-8 bg-card border border-border p-1 h-auto">
             <TabsTrigger 
               value="teams" 
               className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-outfit font-semibold py-3"
             >
               Teams
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rules"
+              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground font-outfit font-semibold py-3"
+            >
+              Rules
             </TabsTrigger>
             <TabsTrigger 
               value="draw"
@@ -121,9 +130,18 @@ const Index = () => {
             />
           </TabsContent>
 
+          <TabsContent value="rules" className="mt-0">
+            <TournamentRulesEditor 
+              rules={rules}
+              onRulesChange={setRules}
+              disabled={fixtures.length > 0}
+            />
+          </TabsContent>
+
           <TabsContent value="draw" className="mt-0">
             <DrawCeremony3D 
-              teams={teams} 
+              teams={teams}
+              rules={rules}
               onDrawComplete={handleDrawComplete}
               hasExistingDraw={fixtures.length > 0}
             />
@@ -138,7 +156,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="simulate" className="mt-0">
-            <MatchSimulator fixtures={fixtures} onSimulate={handleSimulation} />
+            <MatchSimulator fixtures={fixtures} rules={rules} onSimulate={handleSimulation} />
           </TabsContent>
 
           <TabsContent value="export" className="mt-0">
@@ -146,7 +164,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="playoff" className="mt-0">
-            <PlayoffBracket standings={standings} />
+            <PlayoffBracket standings={standings} rules={rules} />
           </TabsContent>
         </Tabs>
       </main>

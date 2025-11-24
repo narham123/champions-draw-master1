@@ -1,11 +1,15 @@
 import { Team, Match } from "@/types/team";
+import { TournamentRules, defaultTournamentRules } from "@/types/tournamentRules";
 
 export interface DrawResult {
   fixtures: Match[];
   errors: string[];
 }
 
-export const conductSwissDraw = (teams: Team[]): DrawResult => {
+export const conductSwissDraw = (
+  teams: Team[], 
+  rules: TournamentRules = defaultTournamentRules
+): DrawResult => {
   const fixtures: Match[] = [];
   const errors: string[] = [];
   const matchups = new Map<string, Set<string>>();
@@ -15,8 +19,8 @@ export const conductSwissDraw = (teams: Team[]): DrawResult => {
     matchups.set(team.id, new Set());
   });
   
-  // Each team plays 8 matches (4 home, 4 away)
-  const matchesPerTeam = 8;
+  // Use configured number of matchdays
+  const matchesPerTeam = rules.numberOfMatchdays;
   const homeAwayBalance = matchesPerTeam / 2;
   
   // Track home/away counts
@@ -45,7 +49,12 @@ export const conductSwissDraw = (teams: Team[]): DrawResult => {
         const team1Home = (homeCount.get(team1.id) || 0) < homeAwayBalance;
         const team2Away = (awayCount.get(team2.id) || 0) < homeAwayBalance;
         
-        if (!alreadyPlayed && !sameCountry && team1Home && team2Away) {
+        // Apply rules
+        const countryConflict = rules.countryProtection && sameCountry;
+        const rematchConflict = rules.noRematches && alreadyPlayed;
+        const potConflict = rules.potProtection && matchday === 1 && team1.pot === team2.pot;
+        
+        if (!countryConflict && !rematchConflict && !potConflict && team1Home && team2Away) {
           // Create match
           const match: Match = {
             id: `${team1.id}-${team2.id}-${matchday}`,
@@ -93,7 +102,7 @@ export const conductSwissDraw = (teams: Team[]): DrawResult => {
   return { fixtures, errors };
 };
 
-export const simulateMatch = (match: Match): Match => {
+export const simulateMatch = (match: Match, allowDraws: boolean = true): Match => {
   // Simple simulation based on team coefficients
   const homeAdvantage = 5;
   const homeStrength = match.homeTeam.coefficient + homeAdvantage;
@@ -115,10 +124,19 @@ export const simulateMatch = (match: Match): Match => {
     awayScore = Math.floor(Math.random() * 3) + 1;
     homeScore = Math.floor(Math.random() * awayScore);
   } else {
-    // Draw
+    // Draw or forced result
     const goals = Math.floor(Math.random() * 4);
     homeScore = goals;
     awayScore = goals;
+    
+    // If draws not allowed, ensure there's a winner
+    if (!allowDraws && homeScore === awayScore) {
+      if (Math.random() < homeWinProbability) {
+        homeScore++;
+      } else {
+        awayScore++;
+      }
+    }
   }
   
   return {
