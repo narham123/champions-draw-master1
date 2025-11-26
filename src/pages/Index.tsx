@@ -46,6 +46,22 @@ const Index = () => {
     }
   };
 
+  const handleUpdateMatchScore = (matchId: string, homeScore: number, awayScore: number) => {
+    setFixtures(fixtures.map(match => 
+      match.id === matchId 
+        ? { ...match, homeScore, awayScore, played: true }
+        : match
+    ));
+  };
+
+  const handleResetMatchScore = (matchId: string) => {
+    setFixtures(fixtures.map(match => 
+      match.id === matchId 
+        ? { ...match, homeScore: undefined, awayScore: undefined, played: false }
+        : match
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -148,7 +164,11 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="fixtures" className="mt-0">
-            <Fixtures fixtures={fixtures} />
+            <Fixtures 
+              fixtures={fixtures} 
+              onUpdateScore={handleUpdateMatchScore}
+              onResetScore={handleResetMatchScore}
+            />
           </TabsContent>
 
           <TabsContent value="standings" className="mt-0">

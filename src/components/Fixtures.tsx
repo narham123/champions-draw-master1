@@ -3,7 +3,7 @@ import { Match } from "@/types/team";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, MessageSquare } from "lucide-react";
+import { Calendar, MessageSquare, Edit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,13 +11,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import MatchCommentary from "./MatchCommentary";
+import ScoreInput from "./ScoreInput";
 
 interface FixturesProps {
   fixtures: Match[];
+  onUpdateScore?: (matchId: string, homeScore: number, awayScore: number) => void;
+  onResetScore?: (matchId: string) => void;
 }
 
-const Fixtures = ({ fixtures }: FixturesProps) => {
+const Fixtures = ({ fixtures, onUpdateScore, onResetScore }: FixturesProps) => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   
   const fixturesByMatchday = fixtures.reduce((acc, fixture) => {
     if (!acc[fixture.matchday]) {
@@ -103,16 +107,30 @@ const Fixtures = ({ fixtures }: FixturesProps) => {
                       )}
                     </div>
                     
-                    {match.played && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSelectedMatch(match)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <MessageSquare className="h-4 w-4 text-accent" />
-                      </Button>
-                    )}
+                    <div className="flex gap-1">
+                      {onUpdateScore && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingMatch(match)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Edit score"
+                        >
+                          <Edit className="h-4 w-4 text-accent" />
+                        </Button>
+                      )}
+                      {match.played && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedMatch(match)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="View commentary"
+                        >
+                          <MessageSquare className="h-4 w-4 text-accent" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -130,6 +148,16 @@ const Fixtures = ({ fixtures }: FixturesProps) => {
           {selectedMatch && <MatchCommentary match={selectedMatch} />}
         </DialogContent>
       </Dialog>
+
+      {onUpdateScore && onResetScore && (
+        <ScoreInput
+          match={editingMatch}
+          open={!!editingMatch}
+          onOpenChange={(open) => !open && setEditingMatch(null)}
+          onSave={onUpdateScore}
+          onReset={onResetScore}
+        />
+      )}
     </div>
   );
 };
