@@ -6,6 +6,19 @@ export interface DrawResult {
   errors: string[];
 }
 
+export interface DrawStep {
+  currentTeam: Team;
+  opponent: Team;
+  matchday: number;
+  isHome: boolean;
+}
+
+export interface SequentialDrawResult {
+  steps: DrawStep[];
+  fixtures: Match[];
+  errors: string[];
+}
+
 export const conductSwissDraw = (
   teams: Team[], 
   rules: TournamentRules = defaultTournamentRules
@@ -100,6 +113,102 @@ export const conductSwissDraw = (
   }
   
   return { fixtures, errors };
+};
+
+export const conductSequentialDraw = (
+  teams: Team[], 
+  rules: TournamentRules = defaultTournamentRules
+): SequentialDrawResult => {
+  const steps: DrawStep[] = [];
+  const fixtures: Match[] = [];
+  const errors: string[] = [];
+  const matchups = new Map<string, Set<string>>();
+  
+  // Initialize matchups tracker
+  teams.forEach(team => {
+    matchups.set(team.id, new Set());
+  });
+  
+  // Use configured number of matchdays
+  const matchesPerTeam = rules.numberOfMatchdays;
+  const homeAwayBalance = matchesPerTeam / 2;
+  
+  // Track home/away counts
+  const homeCount = new Map<string, number>();
+  const awayCount = new Map<string, number>();
+  teams.forEach(team => {
+    homeCount.set(team.id, 0);
+    awayCount.set(team.id, 0);
+  });
+  
+  // Sort teams by pot for draw order (Pot 1 teams draw first)
+  const sortedTeams = [...teams].sort((a, b) => a.pot - b.pot);
+  
+  // For each team, draw all their opponents
+  sortedTeams.forEach(currentTeam => {
+    for (let matchday = 1; matchday <= matchesPerTeam; matchday++) {
+      // Find available opponents
+      const availableOpponents = teams.filter(opponent => {
+        if (opponent.id === currentTeam.id) return false;
+        if (matchups.get(currentTeam.id)?.has(opponent.id)) return false;
+        
+        const sameCountry = currentTeam.country === opponent.country;
+        const countryConflict = rules.countryProtection && sameCountry;
+        const potConflict = rules.potProtection && matchday === 1 && currentTeam.pot === opponent.pot;
+        
+        return !countryConflict && !potConflict;
+      });
+      
+      if (availableOpponents.length === 0) continue;
+      
+      // Select random opponent
+      const opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+      
+      // Determine home/away based on balance
+      const currentHome = (homeCount.get(currentTeam.id) || 0);
+      const currentAway = (awayCount.get(currentTeam.id) || 0);
+      const isHome = currentHome < homeAwayBalance || currentAway >= homeAwayBalance;
+      
+      // Create step for animation
+      steps.push({
+        currentTeam,
+        opponent,
+        matchday,
+        isHome
+      });
+      
+      // Create match (avoid duplicates)
+      const existingMatch = fixtures.find(f => 
+        (f.homeTeam.id === currentTeam.id && f.awayTeam.id === opponent.id && f.matchday === matchday) ||
+        (f.homeTeam.id === opponent.id && f.awayTeam.id === currentTeam.id && f.matchday === matchday)
+      );
+      
+      if (!existingMatch) {
+        const match: Match = {
+          id: isHome ? `${currentTeam.id}-${opponent.id}-${matchday}` : `${opponent.id}-${currentTeam.id}-${matchday}`,
+          homeTeam: isHome ? currentTeam : opponent,
+          awayTeam: isHome ? opponent : currentTeam,
+          matchday,
+          played: false,
+        };
+        fixtures.push(match);
+        
+        // Update tracking
+        matchups.get(currentTeam.id)?.add(opponent.id);
+        matchups.get(opponent.id)?.add(currentTeam.id);
+        
+        if (isHome) {
+          homeCount.set(currentTeam.id, currentHome + 1);
+          awayCount.set(opponent.id, (awayCount.get(opponent.id) || 0) + 1);
+        } else {
+          awayCount.set(currentTeam.id, currentAway + 1);
+          homeCount.set(opponent.id, (homeCount.get(opponent.id) || 0) + 1);
+        }
+      }
+    }
+  });
+  
+  return { steps, fixtures, errors };
 };
 
 export const simulateMatch = (match: Match, allowDraws: boolean = true): Match => {
